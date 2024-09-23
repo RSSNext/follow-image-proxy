@@ -1,19 +1,11 @@
-FROM ghcr.io/rss3-network/go-image/go-builder:main-4782eed AS base
+FROM ghcr.io/rss3-network/go-image/go-builder:main-4782eed AS builder
 
 WORKDIR /root/follow-image-proxy
-
-RUN --mount=type=cache,target=/go/pkg/mod/ \
-    --mount=type=bind,source=go.sum,target=go.sum \
-    --mount=type=bind,source=go.mod,target=go.mod \
-    go mod download -x
-
+ENV CGO_ENABLED=0
 COPY . .
 
-FROM base AS builder
-
-ENV CGO_ENABLED=0
-RUN --mount=type=cache,target=/go/pkg/mod/ \
-    go build -o build/follow-image-proxy main.go
+RUN go mod download -x
+RUN go build -o build/follow-image-proxy main.go
 
 FROM ghcr.io/rss3-network/go-image/go-runtime:main-4782eed AS runner
 
