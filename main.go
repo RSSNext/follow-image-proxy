@@ -56,6 +56,7 @@ func handleProxyRequest(c echo.Context) error {
 	setRefererHeader(req, parsedURL)
 	setUserAgentHeader(req)
 	setXForwardedForHeader(req, c.RealIP())
+	setAdditionalHeaders(req, parsedURL)
 
 	resp, err := getHTTPClient().Do(req)
 	if err != nil {
@@ -87,9 +88,22 @@ func setRefererHeader(req *http.Request, parsedURL *url.URL) {
 }
 
 func setUserAgentHeader(req *http.Request) {
-	req.Header.Set("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36")
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
 }
 
 func setXForwardedForHeader(req *http.Request, realIP string) {
 	req.Header.Set("X-Forwarded-For", realIP)
+}
+
+func setAdditionalHeaders(req *http.Request, parsedURL *url.URL) {
+	req.Header.Set("Accept", "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8")
+	req.Header.Set("Accept-Language", "en-US,en;q=0.9")
+	req.Header.Set("Cache-Control", "no-cache")
+	req.Header.Set("Pragma", "no-cache")
+	req.Header.Set("Sec-Fetch-Dest", "image")
+	req.Header.Set("Sec-Fetch-Mode", "no-cors")
+	req.Header.Set("Sec-Fetch-Site", "cross-site")
+	req.Header.Set("Origin", fmt.Sprintf("%s://%s", parsedURL.Scheme, parsedURL.Host))
+	req.Header.Set("DNT", "1")
+	req.Header.Set("Connection", "keep-alive")
 }
