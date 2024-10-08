@@ -60,13 +60,15 @@ func handleProxyRequest(c echo.Context) error {
 
 	resp, err := getHTTPClient().Do(req)
 	if err != nil {
-		return c.String(http.StatusBadGateway, fmt.Sprintf("Error fetching the URL: %v", err))
+		// Use Thumbor as fallback
+		return handleThumborFallback(c, targetURL)
 	}
 	defer resp.Body.Close()
 
 	contentType := resp.Header.Get("Content-Type")
 	if !strings.Contains(contentType, "image") {
-		return c.String(http.StatusForbidden, fmt.Sprintf("Forbidden: Content-Type is not an image. Received Content-Type: %s", contentType))
+		// Use Thumbor as fallback if content is not an image
+		return handleThumborFallback(c, targetURL)
 	}
 
 	c.Response().Header().Set("Content-Type", resp.Header.Get("Content-Type"))
@@ -75,6 +77,30 @@ func handleProxyRequest(c echo.Context) error {
 	_, err = io.Copy(c.Response().Writer, resp.Body)
 	if err != nil {
 		return c.String(http.StatusInternalServerError, fmt.Sprintf("Error copying response body: %v", err))
+	}
+	return nil
+}
+
+func handleThumborFallback(c echo.Context, originalURL string) error {
+	thumborURL := fmt.Sprintf("https://thumbor.follow.is/unsafe/%s", originalURL)
+
+	req, err := http.NewRequestWithContext(c.Request().Context(), "GET", thumborURL, nil)
+	if err != nil {
+		return c.String(http.StatusInternalServerError, fmt.Sprintf("Error creating Thumbor request: %v", err))
+	}
+
+	resp, err := getHTTPClient().Do(req)
+	if err != nil {
+		return c.String(http.StatusBadGateway, fmt.Sprintf("Error fetching from Thumbor: %v", err))
+	}
+	defer resp.Body.Close()
+
+	c.Response().Header().Set("Content-Type", resp.Header.Get("Content-Type"))
+	c.Response().WriteHeader(resp.StatusCode)
+
+	_, err = io.Copy(c.Response().Writer, resp.Body)
+	if err != nil {
+		return c.String(http.StatusInternalServerError, fmt.Sprintf("Error copying Thumbor response body: %v", err))
 	}
 	return nil
 }
