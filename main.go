@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -48,7 +49,10 @@ func handleProxyRequest(c echo.Context) error {
 		return c.String(http.StatusBadRequest, fmt.Sprintf("Invalid URL: %v", err))
 	}
 
-	req, err := http.NewRequestWithContext(c.Request().Context(), "GET", targetURL, nil)
+	ctx, cancel := context.WithTimeout(c.Request().Context(), 30*time.Second)
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(ctx, "GET", targetURL, nil)
 	if err != nil {
 		return c.String(http.StatusInternalServerError, fmt.Sprintf("Error creating request: %v", err))
 	}
@@ -84,7 +88,10 @@ func handleProxyRequest(c echo.Context) error {
 func handleThumborFallback(c echo.Context, originalURL string) error {
 	thumborURL := fmt.Sprintf("https://thumbor.follow.is/unsafe/%s", originalURL)
 
-	req, err := http.NewRequestWithContext(c.Request().Context(), "GET", thumborURL, nil)
+	ctx, cancel := context.WithTimeout(c.Request().Context(), 30*time.Second)
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(ctx, "GET", thumborURL, nil)
 	if err != nil {
 		return c.String(http.StatusInternalServerError, fmt.Sprintf("Error creating Thumbor request: %v", err))
 	}
