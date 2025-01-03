@@ -113,11 +113,8 @@ func handleThumborFallback(c echo.Context, originalURL string) error {
 }
 
 func setRefererHeader(req *http.Request, parsedURL *url.URL) {
-	hostnameParts := strings.Split(parsedURL.Hostname(), ".")
-	if len(hostnameParts) > 2 {
-		mainDomain := strings.Join(hostnameParts[len(hostnameParts)-2:], ".")
-		req.Header.Set("Referer", fmt.Sprintf("https://%s", mainDomain))
-	}
+	hostname := parsedURL.Hostname()
+	req.Header.Set("Referer", fmt.Sprintf("https://%s", hostname))
 }
 
 func setUserAgentHeader(req *http.Request) {
